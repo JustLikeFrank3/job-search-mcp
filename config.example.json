@@ -9,5 +9,6 @@
   "quick_reference_path": "INTERVIEW_DAY_QUICK_REFERENCE.md",
   "optimized_resumes_dir": "01-Current-Optimized",
   "cover_letters_dir": "02-Cover-Letters",
-  "reference_materials_dir": "06-Reference-Materials"
+  "reference_materials_dir": "06-Reference-Materials",
+  "openai_api_key": "sk-...your-key-here"
 }

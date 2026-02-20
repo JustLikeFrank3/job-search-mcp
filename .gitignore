@@ -11,6 +11,9 @@ __pycache__/
 *.pyc
 *.pyo
 
+# ChromaDB vector store (contains your embedded personal data)
+data/chroma/
+
 # macOS
 .DS_Store
 

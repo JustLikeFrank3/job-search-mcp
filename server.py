@@ -616,6 +616,60 @@ def get_mental_health_log(days: int = 14) -> str:
     return "\n".join(lines)
 
 
+# ─── TOOLS: RAG SEARCH ───────────────────────────────────────────────────────
+
+@mcp.tool()
+def search_materials(query: str, category: str = "") -> str:
+    """
+    Semantic search across all indexed job search materials.
+    Much smarter than reading whole files — returns only the most relevant chunks.
+
+    category options (leave empty to search all):
+      resume | cover_letters | leetcode | interview_prep | reference
+
+    Examples:
+      search_materials("PostgreSQL migration zero downtime")
+      search_materials("sliding window pattern", category="leetcode")
+      search_materials("behavioral leadership story", category="interview_prep")
+    """
+    try:
+        from rag import search, format_results
+        hits = search(query, category=category or None, n_results=6)
+        return format_results(hits, f'Results for: "{query}"')
+    except Exception as e:
+        if "openai_api_key" in str(e).lower() or "not set" in str(e).lower():
+            return (
+                "RAG search requires an OpenAI API key.\n"
+                "Add 'openai_api_key' to config.json, then run reindex_materials()."
+            )
+        return f"Search error: {e}\nTry running reindex_materials() first."
+
+
+@mcp.tool()
+def reindex_materials() -> str:
+    """
+    (Re)build the RAG index from all job search materials.
+    Run this once after setup, and again whenever you add new resumes,
+    cover letters, or prep files. Takes ~30-60 seconds.
+    """
+    try:
+        from rag import build_index
+        counts = build_index(verbose=False)
+        total  = sum(counts.values())
+        lines  = [f"✓ Index built. {total} total chunks indexed:", ""]
+        for cat, count in counts.items():
+            lines.append(f"  {cat:<16} {count} chunks")
+        lines += ["", "You can now use search_materials() for semantic search."]
+        return "\n".join(lines)
+    except Exception as e:
+        if "openai_api_key" in str(e).lower() or "not set" in str(e).lower():
+            return (
+                "Indexing requires an OpenAI API key.\n"
+                "Add 'openai_api_key' to config.json and try again."
+            )
+        return f"Indexing error: {e}"
+
+
 # ─── ENTRY POINT ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
