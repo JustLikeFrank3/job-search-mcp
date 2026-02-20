@@ -98,7 +98,13 @@ Create or update `.vscode/mcp.json` in your workspace:
 }
 ```
 
-Then **Cmd+Shift+P → Developer: Reload Window**. Copilot will now have all tools available in every new chat.
+Then **Cmd+Shift+P → Developer: Reload Window**.
+
+To enable the tools in Copilot chat:
+1. Open a Copilot Chat panel (the chat sidebar, not inline chat)
+2. Click the **Tools** icon (looks like a wrench/plug) at the bottom of the chat input
+3. Find **job-search-assistant** in the list and toggle it on
+4. Tools will now be available in every new chat in this workspace
 
 ---
 
