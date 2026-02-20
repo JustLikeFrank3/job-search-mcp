@@ -302,7 +302,7 @@ def get_customization_strategy(role_type: str) -> str:
             "Emphasize technical evangelism, AI tooling adoption, and measurable team impact."
         ),
         "iot": (
-            "Lead with IoT Engineering degree, sPiCam project (FastAPI + Raspberry Pi + servo HAT), "
+            "Lead with IoT Engineering degree, RetrosPiCam project (FastAPI + Raspberry Pi + servo HAT), "
             "hardware/software integration, and Azure edge/cloud connectivity. "
             "Tie in LiveVox latency work (2.8ms web, 12.7ms iOS) as embedded-adjacent."
         ),
@@ -424,18 +424,18 @@ def get_existing_prep_file(company: str) -> str:
     return "\n".join(lines)
 
 
-# ─── TOOLS: SPICAM SKILL SCANNER ──────────────────────────────────────────────
+# ─── TOOLS: RETROSPICAM SKILL SCANNER ────────────────────────────────────────
 
 @mcp.tool()
 def scan_spicam_for_skills() -> str:
     """
-    Scans the sPiCam project codebase and returns:
+    Scans the RetrosPiCam project codebase and returns:
       - Technologies / patterns detected
       - Suggested resume bullets
       - New skills not yet in the master resume
     """
     if not SPICAM_FOLDER.exists():
-        return f"sPiCam folder not found at: {SPICAM_FOLDER}"
+        return f"RetrosPiCam folder not found at: {SPICAM_FOLDER}"
 
     tech_found: set[str] = set()
     file_inventory: list[str] = []
@@ -499,7 +499,7 @@ def scan_spicam_for_skills() -> str:
     new_skills = sorted(tech_found - already_on_resume)
 
     lines = [
-        "═══ SPICAM SKILL SCAN ═══",
+        "═══ RETROSPICAM SKILL SCAN ═══",
         f"Files scanned: {len(file_inventory)}",
         "",
         "── All Technologies Detected ──",
