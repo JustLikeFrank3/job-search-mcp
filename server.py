@@ -52,7 +52,7 @@ QUICK_REFERENCE     = LEETCODE_FOLDER / _cfg["quick_reference_path"]
 # ─── SERVER ───────────────────────────────────────────────────────────────────
 
 mcp = FastMCP(
-    "job-search-assistant",
+    "job-search-as",
     instructions=(
         "You are Frank MacBride's personal job search assistant. "
         "You have direct filesystem access to his resume materials, job hunt status, "
@@ -139,7 +139,17 @@ def update_application(
     data = _load_json(STATUS_FILE, {"applications": []})
     apps: list = data.setdefault("applications", [])
 
-    existing = next((a for a in apps if a["company"].lower() == company.lower()), None)
+    existing = next(
+        (a for a in apps
+         if a["company"].lower() == company.lower()
+         and a["role"].lower() == role.lower()),
+        None,
+    )
+    # Fallback: match on company only if exact role not found
+    if existing is None:
+        existing = next(
+            (a for a in apps if a["company"].lower() == company.lower()), None
+        )
     if existing:
         existing.update(
             role=role,
@@ -196,7 +206,7 @@ def list_existing_materials(company: str = "") -> str:
             return [f"  (folder not found: {d.name})"]
         files = sorted(
             f.name for f in d.iterdir()
-            if f.suffix == ".txt" and "MASTER" not in f.name
+            if f.suffix in (".txt", ".md") and "MASTER" not in f.name
             and (not company or company.lower() in f.name.lower())
         )
         out = [f"\n══ {label} ({len(files)}) ══"]
@@ -390,8 +400,8 @@ def generate_interview_prep_context(
         f"Role:    {role}\n"
         f"Stage:   {stage}\n"
         f"{desc_block}\n\n"
-        f"──── FRANK'S MASTER RESUME ────\n{master[:4000]}\n\n"
-        f"──── QUICK REFERENCE / STAR STORIES ────\n{quick_ref[:3000]}\n\n"
+        f"──── FRANK'S MASTER RESUME ────\n{master}\n\n"
+        f"──── QUICK REFERENCE / STAR STORIES ────\n{quick_ref}\n\n"
         f"Use the above to produce:\n"
         f"  1. Top 5 things Frank must communicate for THIS role/stage\n"
         f"  2. Anticipated questions + suggested STAR responses\n"
@@ -406,12 +416,13 @@ def generate_interview_prep_context(
 def get_existing_prep_file(company: str) -> str:
     """
     Looks for an existing interview prep file for the given company.
-    Searches the top-level Resume 2025 folder for matching .txt files.
+    Searches the Resume 2025 folder recursively for matching .txt and .md files.
     """
     matches = sorted(
-        f for f in RESUME_FOLDER.glob("*.txt")
-        if company.lower() in f.name.lower()
-        and ("prep" in f.name.lower() or "interview" in f.name.lower() or "call" in f.name.lower())
+        f for f in RESUME_FOLDER.rglob("*")
+        if f.suffix in (".txt", ".md")
+        and company.lower() in f.name.lower()
+        and any(kw in f.name.lower() for kw in ("prep", "interview", "call", "assessment"))
     )
     if not matches:
         return f"No existing prep files found for '{company}'."
