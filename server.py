@@ -37,21 +37,51 @@ def _load_config() -> dict:
     return json.loads(config_path.read_text(encoding="utf-8"))
 
 
-_cfg = _load_config()
+# Paths are module-level globals so they can be swapped by _reconfigure() in tests.
+# Production: _load_config() runs once at startup and populates these.
+# Tests: call _reconfigure(fake_cfg_dict) from conftest before executing any tool.
 
-RESUME_FOLDER   = Path(_cfg["resume_folder"])
-LEETCODE_FOLDER = Path(_cfg["leetcode_folder"])
-SPICAM_FOLDER   = Path(_cfg["spicam_folder"])
-DATA_FOLDER     = Path(_cfg["data_folder"])
+RESUME_FOLDER: Path
+LEETCODE_FOLDER: Path
+SPICAM_FOLDER: Path
+DATA_FOLDER: Path
 
-STATUS_FILE           = DATA_FOLDER / "status.json"
-HEALTH_LOG_FILE       = DATA_FOLDER / "mental_health_log.json"
-PERSONAL_CONTEXT_FILE = DATA_FOLDER / "personal_context.json"
-TONE_FILE             = DATA_FOLDER / "tone_samples.json"
+STATUS_FILE: Path
+HEALTH_LOG_FILE: Path
+PERSONAL_CONTEXT_FILE: Path
+TONE_FILE: Path
 
-MASTER_RESUME       = RESUME_FOLDER / _cfg["master_resume_path"]
-LEETCODE_CHEATSHEET = LEETCODE_FOLDER / _cfg["leetcode_cheatsheet_path"]
-QUICK_REFERENCE     = LEETCODE_FOLDER / _cfg["quick_reference_path"]
+MASTER_RESUME: Path
+LEETCODE_CHEATSHEET: Path
+QUICK_REFERENCE: Path
+
+
+def _reconfigure(cfg: dict) -> None:
+    """Re-initialise all path globals from *cfg*.
+
+    Called once at startup (via _load_config()) and can be called again by
+    tests to inject a fully-controlled tmp-dir config without touching disk.
+    """
+    global RESUME_FOLDER, LEETCODE_FOLDER, SPICAM_FOLDER, DATA_FOLDER
+    global STATUS_FILE, HEALTH_LOG_FILE, PERSONAL_CONTEXT_FILE, TONE_FILE
+    global MASTER_RESUME, LEETCODE_CHEATSHEET, QUICK_REFERENCE
+
+    RESUME_FOLDER   = Path(cfg["resume_folder"])
+    LEETCODE_FOLDER = Path(cfg["leetcode_folder"])
+    SPICAM_FOLDER   = Path(cfg["spicam_folder"])
+    DATA_FOLDER     = Path(cfg["data_folder"])
+
+    STATUS_FILE           = DATA_FOLDER / "status.json"
+    HEALTH_LOG_FILE       = DATA_FOLDER / "mental_health_log.json"
+    PERSONAL_CONTEXT_FILE = DATA_FOLDER / "personal_context.json"
+    TONE_FILE             = DATA_FOLDER / "tone_samples.json"
+
+    MASTER_RESUME       = RESUME_FOLDER / cfg["master_resume_path"]
+    LEETCODE_CHEATSHEET = LEETCODE_FOLDER / cfg["leetcode_cheatsheet_path"]
+    QUICK_REFERENCE     = LEETCODE_FOLDER / cfg["quick_reference_path"]
+
+
+_reconfigure(_load_config())
 
 # ─── SERVER ───────────────────────────────────────────────────────────────────
 
