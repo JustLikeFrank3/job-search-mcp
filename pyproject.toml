@@ -11,4 +11,4 @@ show_missing   = true
 skip_covered   = false
 # Raise incrementally as test_job_hunt, test_resume, test_mental_health are added.
 # Current: 43% (helpers + personal_context + star_context covered)
-fail_under     = 42
+fail_under     = 50

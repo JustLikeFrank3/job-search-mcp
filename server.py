@@ -50,6 +50,7 @@ STATUS_FILE: Path
 HEALTH_LOG_FILE: Path
 PERSONAL_CONTEXT_FILE: Path
 TONE_FILE: Path
+SCAN_INDEX_FILE: Path
 
 MASTER_RESUME: Path
 LEETCODE_CHEATSHEET: Path
@@ -63,7 +64,7 @@ def _reconfigure(cfg: dict) -> None:
     tests to inject a fully-controlled tmp-dir config without touching disk.
     """
     global RESUME_FOLDER, LEETCODE_FOLDER, SPICAM_FOLDER, DATA_FOLDER
-    global STATUS_FILE, HEALTH_LOG_FILE, PERSONAL_CONTEXT_FILE, TONE_FILE
+    global STATUS_FILE, HEALTH_LOG_FILE, PERSONAL_CONTEXT_FILE, TONE_FILE, SCAN_INDEX_FILE
     global MASTER_RESUME, LEETCODE_CHEATSHEET, QUICK_REFERENCE
 
     RESUME_FOLDER   = Path(cfg["resume_folder"])
@@ -75,6 +76,7 @@ def _reconfigure(cfg: dict) -> None:
     HEALTH_LOG_FILE       = DATA_FOLDER / "mental_health_log.json"
     PERSONAL_CONTEXT_FILE = DATA_FOLDER / "personal_context.json"
     TONE_FILE             = DATA_FOLDER / "tone_samples.json"
+    SCAN_INDEX_FILE       = DATA_FOLDER / "scan_index.json"
 
     MASTER_RESUME       = RESUME_FOLDER / cfg["master_resume_path"]
     LEETCODE_CHEATSHEET = LEETCODE_FOLDER / cfg["leetcode_cheatsheet_path"]
@@ -121,6 +123,97 @@ def _save_json(path: Path, data) -> None:
 
 def _now() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+
+
+# ─── PURE LOGIC HELPERS (no I/O — fully unit-testable) ───────────────────────
+
+def _build_story_entry(stories: list, story: str, tags: list, people: list, title: str) -> dict:
+    """Build a new story dict. Does not touch the filesystem."""
+    return {
+        "id":        len(stories) + 1,
+        "timestamp": datetime.datetime.now().isoformat(),
+        "title":     title or (story[:60] + ("..." if len(story) > 60 else "")),
+        "story":     story,
+        "tags":      [t.lower().strip() for t in tags],
+        "people":    list(people),
+    }
+
+
+def _filter_stories(stories: list, tag: str = "", person: str = "") -> list:
+    """Return stories matching optional tag / person filters."""
+    if tag:
+        stories = [s for s in stories if tag.lower() in s.get("tags", [])]
+    if person:
+        stories = [s for s in stories if
+                   any(person.lower() in p.lower() for p in s.get("people", []))]
+    return stories
+
+
+def _format_story_list(stories: list) -> str:
+    """Render a list of story dicts as a human-readable string."""
+    lines = [f"\u2550\u2550\u2550 PERSONAL CONTEXT ({len(stories)} stories) \u2550\u2550\u2550", ""]
+    for s in stories:
+        lines.append(f"\u25aa #{s['id']} \u2014 {s['title']}")
+        lines.append(f"  Tags:   {', '.join(s.get('tags', []))}")
+        if s.get("people"):
+            lines.append(f"  People: {', '.join(s['people'])}")
+        lines.append(f"  {s['story']}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _build_checkin_entry(mood: str, energy: int, notes: str, productive: bool) -> tuple:
+    """Build a mental-health check-in dict and its guidance string."""
+    energy_int = max(1, min(10, int(energy)))
+    entry = {
+        "timestamp":  datetime.datetime.now().isoformat(),
+        "date":       datetime.date.today().isoformat(),
+        "mood":       mood,
+        "energy":     energy_int,
+        "productive": bool(productive),
+        "notes":      notes,
+    }
+    if energy_int <= 3 or mood in ("depressed", "low"):
+        guidance = (
+            "Low energy logged. Small wins count — "
+            "even one LeetCode problem or one email sent is real progress. "
+            "You're still moving, even on hard days."
+        )
+    elif mood == "hyperfocus" or energy_int >= 8:
+        guidance = (
+            "High energy logged. Good time for deep work. "
+            "Just remember to eat, hydrate, and step away before burnout hits."
+        )
+    else:
+        guidance = "Logged. You're doing the work, even when it's hard."
+    return entry, guidance
+
+
+def _build_tone_sample_entry(samples: list, text: str, source: str, context: str) -> dict:
+    """Build a tone-sample dict. Does not touch the filesystem."""
+    return {
+        "id":         len(samples) + 1,
+        "timestamp":  datetime.datetime.now().isoformat(),
+        "source":     source,
+        "context":    context,
+        "text":       text,
+        "word_count": len(text.split()),
+    }
+
+
+def _scan_dirs(category: str) -> list:
+    """Resolve which RESUME_FOLDER subdirectories to scan for a given category."""
+    mapping: dict = {
+        "cover_letters": [RESUME_FOLDER / "02-Cover-Letters"],
+        "resumes":       [RESUME_FOLDER / "01-Current-Optimized"],
+        "misc":          [RESUME_FOLDER],
+        "all":           [
+            RESUME_FOLDER / "02-Cover-Letters",
+            RESUME_FOLDER / "01-Current-Optimized",
+            RESUME_FOLDER,
+        ],
+    }
+    return mapping.get(category.lower(), [RESUME_FOLDER / "02-Cover-Letters"])
 
 
 # ─── TOOLS: JOB HUNT STATUS ───────────────────────────────────────────────────
@@ -593,34 +686,11 @@ def log_mental_health_checkin(
     notes:     optional free-text context
     productive: did you get meaningful work done today?
     """
-    data = _load_json(HEALTH_LOG_FILE, {"entries": []})
-    entry = {
-        "timestamp": datetime.datetime.now().isoformat(),
-        "date":      datetime.date.today().isoformat(),
-        "mood":      mood,
-        "energy":    max(1, min(10, int(energy))),
-        "productive": bool(productive),
-        "notes":     notes,
-    }
+    data  = _load_json(HEALTH_LOG_FILE, {"entries": []})
+    entry, guidance = _build_checkin_entry(mood, energy, notes, productive)
     data.setdefault("entries", []).append(entry)
     _save_json(HEALTH_LOG_FILE, data)
-
-    energy_int = entry["energy"]
-    if energy_int <= 3 or mood in ("depressed", "low"):
-        guidance = (
-            "Low energy logged. Small wins count — "
-            "even one LeetCode problem or one email sent is real progress. "
-            "You're still moving, even on hard days."
-        )
-    elif mood == "hyperfocus" or energy_int >= 8:
-        guidance = (
-            "High energy logged. Good time for deep work. "
-            "Just remember to eat, hydrate, and step away before burnout hits."
-        )
-    else:
-        guidance = "Logged. You're doing the work, even when it's hard."
-
-    return f"Check-in saved ({entry['date']}, energy {energy_int}/10, mood: {mood}).\n{guidance}"
+    return f"Check-in saved ({entry['date']}, energy {entry['energy']}/10, mood: {mood}).\n{guidance}"
 
 
 @mcp.tool()
@@ -679,15 +749,8 @@ def log_personal_story(
     people: names of people relevant to the story (e.g. ["Sean Evans", "Grandpa Frank"])
     title: optional short label for the story (auto-generated from first 60 chars if omitted)
     """
-    data = _load_json(PERSONAL_CONTEXT_FILE, {"stories": []})
-    entry = {
-        "id": len(data["stories"]) + 1,
-        "timestamp": datetime.datetime.now().isoformat(),
-        "title": title or (story[:60] + ("..." if len(story) > 60 else "")),
-        "story": story,
-        "tags": [t.lower().strip() for t in tags],
-        "people": people,
-    }
+    data  = _load_json(PERSONAL_CONTEXT_FILE, {"stories": []})
+    entry = _build_story_entry(data["stories"], story, tags, people, title)
     data["stories"].append(entry)
     _save_json(PERSONAL_CONTEXT_FILE, data)
     return f"\u2713 Story logged (#{entry['id']}): {entry['title']}"
@@ -702,28 +765,15 @@ def get_personal_context(tag: str = "", person: str = "") -> str:
     Use this before generating cover letters, dedications, or any writing
     that should feel personal rather than generic.
     """
-    data = _load_json(PERSONAL_CONTEXT_FILE, {"stories": []})
-    stories = data.get("stories", [])
-
-    if tag:
-        stories = [s for s in stories if tag.lower() in s.get("tags", [])]
-    if person:
-        stories = [s for s in stories if any(person.lower() in p.lower() for p in s.get("people", []))]
+    data    = _load_json(PERSONAL_CONTEXT_FILE, {"stories": []})
+    stories = _filter_stories(data.get("stories", []), tag, person)
 
     if not stories:
-        qualifier = f" for tag '{tag}'" if tag else ""
+        qualifier  = f" for tag '{tag}'"      if tag    else ""
         qualifier += f" for person '{person}'" if person else ""
         return f"No personal stories found{qualifier}."
 
-    lines = [f"\u2550\u2550\u2550 PERSONAL CONTEXT ({len(stories)} stories) \u2550\u2550\u2550", ""]
-    for s in stories:
-        lines.append(f"\u25aa #{s['id']} \u2014 {s['title']}")
-        lines.append(f"  Tags:   {', '.join(s.get('tags', []))}")
-        if s.get("people"):
-            lines.append(f"  People: {', '.join(s['people'])}")
-        lines.append(f"  {s['story']}")
-        lines.append("")
-    return "\n".join(lines)
+    return _format_story_list(stories)
 
 
 # ─── TOOLS: TONE INGESTION ────────────────────────────────────────────────────
@@ -742,15 +792,8 @@ def log_tone_sample(
             e.g. "cover letter Ford", "text to Jessica", "LinkedIn message to Cheyenne"
     context: optional note about the situation or mood when written
     """
-    data = _load_json(TONE_FILE, {"samples": []})
-    entry = {
-        "id": len(data["samples"]) + 1,
-        "timestamp": datetime.datetime.now().isoformat(),
-        "source": source,
-        "context": context,
-        "text": text,
-        "word_count": len(text.split()),
-    }
+    data  = _load_json(TONE_FILE, {"samples": []})
+    entry = _build_tone_sample_entry(data["samples"], text, source, context)
     data["samples"].append(entry)
     _save_json(TONE_FILE, data)
     return f"\u2713 Tone sample logged (#{entry['id']}, {entry['word_count']} words from '{source}')"
@@ -842,7 +885,111 @@ def reindex_materials() -> str:
         return f"Indexing error: {e}"
 
 
-# ─── TOOLS: STAR STORY CONTEXT ───────────────────────────────────────────────
+# ─── TOOLS: MATERIAL SCAN ───────────────────────────────────────────────────
+
+@mcp.tool()
+def scan_materials_for_tone(
+    category: str = "cover_letters",
+    limit: int = 3,
+    company: str = "",
+    force: bool = False,
+) -> str:
+    """
+    Read a batch of resumes/cover letters and return their full text for
+    tone and personal context extraction.
+
+    After reviewing, call log_tone_sample() for prose that sounds like Frank
+    and log_personal_story() for any specific anecdotes or personal details.
+    Then call scan_materials_for_tone() again to process the next batch —
+    the tool tracks what has already been scanned.
+
+    category: cover_letters | resumes | misc | all  (default: cover_letters)
+    limit:    files per call (default 3)
+    company:  filter to files whose name contains this string
+    force:    re-scan already-processed files (default: skip them)
+    """
+    dirs = _scan_dirs(category)
+
+    # Collect all .txt candidates (non-recursive for misc/root)
+    candidates: list = []
+    for d in dirs:
+        if not d.exists():
+            continue
+        pattern = "*.txt" if d != RESUME_FOLDER else "*.txt"
+        for f in sorted(d.glob("*.txt")):
+            rel = str(f.relative_to(RESUME_FOLDER))
+            candidates.append((rel, f))
+
+    # De-duplicate (all category lists the same dir twice for misc)
+    seen_rels: set = set()
+    deduped = []
+    for rel, f in candidates:
+        if rel not in seen_rels:
+            deduped.append((rel, f))
+            seen_rels.add(rel)
+    candidates = deduped
+
+    # Company filter
+    if company:
+        cl = company.lower()
+        candidates = [(rel, f) for rel, f in candidates if cl in rel.lower()]
+
+    # Skip already-scanned unless force=True
+    index   = _load_json(SCAN_INDEX_FILE, {"scanned": {}})
+    scanned = index.get("scanned", {})
+    if not force:
+        candidates = [(rel, f) for rel, f in candidates if rel not in scanned]
+
+    total_remaining = len(candidates)
+    batch = candidates[:limit]
+
+    if not batch:
+        filter_note = f" (company filter: '{company}')" if company else ""
+        return (
+            f"All {category} files have been scanned{filter_note}.\n"
+            "Use force=True to re-scan, change category, or add new files."
+        )
+
+    lines = [
+        f"\u2550\u2550\u2550 MATERIAL SCAN \u2014 {category.upper()} \u2550\u2550\u2550",
+        f"Returning {len(batch)} of {total_remaining} unscanned files.",
+        "",
+    ]
+
+    for rel, path in batch:
+        content = _read(path)
+        lines += [
+            "\u2500" * 60,
+            f"FILE: {path.name}",
+            "\u2500" * 60,
+            content,
+            "",
+        ]
+        scanned[rel] = datetime.datetime.now().isoformat()
+
+    index["scanned"] = scanned
+    _save_json(SCAN_INDEX_FILE, index)
+
+    remaining_after = total_remaining - len(batch)
+    lines += [
+        "\u2550\u2550\u2550 EXTRACTION INSTRUCTIONS \u2550\u2550\u2550",
+        "",
+        "For each file above, extract:",
+        "  1. TONE SAMPLES  \u2014 paragraphs that sound distinctly like Frank's voice.",
+        "     Best candidates: opening paragraph, closing paragraph, any personal framing.",
+        "     Call: log_tone_sample(text='...', source='Cover Letter <Company>')",
+        "",
+        "  2. PERSONAL STORIES \u2014 any specific anecdote, motivation, or non-resume detail.",
+        "     Call: log_personal_story(story='...', tags=[...], title='...')",
+        "",
+        f"  {remaining_after} file(s) remaining in this category.",
+        "  Call scan_materials_for_tone() again to continue.",
+    ]
+
+    return "\n".join(lines)
+
+
+# ─── TOOLS: STAR STORY CONTEXT ────────────────────────────────────────────────
 
 # Curated resume metrics keyed by story/skill theme
 _STAR_METRICS: dict[str, list[str]] = {
