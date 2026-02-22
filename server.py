@@ -11,8 +11,8 @@ Provides tools for:
   - Mental health check-in logging
   - Personal story / context library (v3)
   - Tone ingestion + voice profile (v3)
+  - PDF export for resumes and cover letters (v4)
 """
-
 from mcp.server.fastmcp import FastMCP
 
 from lib import config
@@ -39,6 +39,7 @@ from tools import (
     rag,
     star,
     outreach,
+    export,
 )
 
 
@@ -97,6 +98,7 @@ tone.register(mcp)
 rag.register(mcp)
 star.register(mcp)
 outreach.register(mcp)
+export.register(mcp)
 
 
 get_job_hunt_status = job_hunt.get_job_hunt_status
@@ -133,6 +135,9 @@ reindex_materials = rag.reindex_materials
 get_star_story_context = star.get_star_story_context
 
 draft_outreach_message = outreach.draft_outreach_message
+
+export_resume_pdf = export.export_resume_pdf
+export_cover_letter_pdf = export.export_cover_letter_pdf
 
 
 if __name__ == "__main__":

@@ -32,6 +32,7 @@ def log_mental_health_checkin(
     notes: str = "",
     productive: bool = False,
 ) -> str:
+    """Log a mental health check-in with mood label (e.g. 'good', 'anxious', 'hyperfocus', 'depressed'), energy level 1-10, optional notes, and whether the day felt productive. Returns a saved confirmation with personalized guidance based on the entry."""
     data = _load_json(config.HEALTH_LOG_FILE, {"entries": []})
     entry, guidance = _build_checkin_entry(mood, energy, notes, productive)
     data.setdefault("entries", []).append(entry)
@@ -40,6 +41,7 @@ def log_mental_health_checkin(
 
 
 def get_mental_health_log(days: int = 14) -> str:
+    """Return recent mental health check-in history. Defaults to the last 14 days. Useful for tracking mood/energy trends during the job search."""
     data = _load_json(config.HEALTH_LOG_FILE, {"entries": []})
     entries = data.get("entries", [])
 

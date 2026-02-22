@@ -9,6 +9,7 @@ def log_personal_story(
     people: list[str] | None = None,
     title: str = "",
 ) -> str:
+    """Save a personal STAR story to the context library. Tag it with relevant skills or themes (e.g. ['cloud_migration', 'leadership']). Optionally include people involved and a short title. Retrieved later via get_star_story_context()."""
     people = people or []
     data = _load_json(config.PERSONAL_CONTEXT_FILE, {"stories": []})
     entry = _build_story_entry(data["stories"], story, tags, people, title)
@@ -18,6 +19,7 @@ def log_personal_story(
 
 
 def get_personal_context(tag: str = "", person: str = "") -> str:
+    """Retrieve stored personal stories, optionally filtered by tag or person's name. Returns all stories if no filters provided."""
     data = _load_json(config.PERSONAL_CONTEXT_FILE, {"stories": []})
     stories = _filter_stories(data.get("stories", []), tag, person)
 

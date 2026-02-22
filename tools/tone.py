@@ -10,6 +10,7 @@ def log_tone_sample(
     source: str,
     context: str = "",
 ) -> str:
+    """Ingest a writing sample to build Frank's tone/voice profile. Pass the text, a source label (e.g. 'cover_letter_fanduel'), and optional context describing the situation. Used to calibrate the AI before drafting new materials."""
     data = _load_json(config.TONE_FILE, {"samples": []})
     entry = _build_tone_sample_entry(data["samples"], text, source, context)
     data["samples"].append(entry)
@@ -18,6 +19,7 @@ def log_tone_sample(
 
 
 def get_tone_profile() -> str:
+    """Return all logged tone samples so the AI can calibrate Frank's writing voice before drafting cover letters, outreach messages, or other materials."""
     data = _load_json(config.TONE_FILE, {"samples": []})
     samples = data.get("samples", [])
 
@@ -49,6 +51,7 @@ def scan_materials_for_tone(
     company: str = "",
     force: bool = False,
 ) -> str:
+    """Auto-scan resume materials and ingest new files as tone samples. category can be 'cover_letters', 'resumes', or 'all'. Skips already-indexed files unless force=True. Optionally filter by company name."""
     dirs = _scan_dirs(category)
 
     candidates: list = []

@@ -3,6 +3,7 @@ from lib import config
 
 
 def assess_job_fitment(company: str, role: str, job_description: str) -> str:
+    """Package Frank's master resume alongside a job description so the AI can assess fit, identify gaps, and recommend which experience to emphasize for this specific role."""
     master = _read(config.MASTER_RESUME)
     return (
         f"═══ FITMENT ASSESSMENT ═══\n"
@@ -14,6 +15,7 @@ def assess_job_fitment(company: str, role: str, job_description: str) -> str:
 
 
 def get_customization_strategy(role_type: str) -> str:
+    """Return a resume customization strategy for a given role type. Valid values: testing, cloud, data_engineering, backend, fullstack, ai_innovation, iot. Advises which skills and stories to lead with."""
     strategies = {
         "testing": (
             "Lead with JUnit/Mockito/Selenium expertise, 80%+ coverage metrics, TDD practices. "

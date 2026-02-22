@@ -1,5 +1,6 @@
 
 def search_materials(query: str, category: str = "") -> str:
+    """Semantic search across all job search materials (resumes, cover letters, interview prep, LeetCode notes, reference files). Optionally filter by category. Requires OpenAI API key and a built index — run reindex_materials() first if needed."""
     try:
         from rag import search, format_results
 
@@ -15,6 +16,7 @@ def search_materials(query: str, category: str = "") -> str:
 
 
 def reindex_materials() -> str:
+    """Rebuild the semantic search index over all job search materials. Run this after adding new resumes, cover letters, or prep files. Requires an OpenAI API key set in config.json."""
     try:
         from rag import build_index
 

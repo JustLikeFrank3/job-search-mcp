@@ -5,10 +5,12 @@ from lib.io import _read
 
 
 def read_master_resume() -> str:
+    """Read Frank's master source resume — the single source of truth containing all metrics, achievements, projects, and context notes. Always read this before generating any resume or cover letter."""
     return _read(config.MASTER_RESUME)
 
 
 def list_existing_materials(company: str = "") -> str:
+    """List all existing resume and cover letter files. Optionally filter by company name to see materials for a specific target company."""
     optimized_dir = config.RESUME_FOLDER / config._cfg["optimized_resumes_dir"]
     cover_letter_dir = config.RESUME_FOLDER / config._cfg["cover_letters_dir"]
 
@@ -33,6 +35,7 @@ def list_existing_materials(company: str = "") -> str:
 
 
 def read_existing_resume(filename: str) -> str:
+    """Read the full text of an existing resume from 01-Current-Optimized/. Use list_existing_materials() to find available filenames."""
     path = config.RESUME_FOLDER / config._cfg["optimized_resumes_dir"] / filename
     if not path.exists():
         return f"Not found: {filename}\nUse list_existing_materials() to see available resumes."
@@ -40,6 +43,7 @@ def read_existing_resume(filename: str) -> str:
 
 
 def read_reference_file(filename: str) -> str:
+    """Read a file from 06-Reference-Materials/ (e.g. template format, consolidated resume, skills variants, GM feedback). Pass the filename only — use list_existing_materials() to discover what's available."""
     ref_dir = config.RESUME_FOLDER / config._cfg["reference_materials_dir"]
     path = ref_dir / filename
     if not path.exists():

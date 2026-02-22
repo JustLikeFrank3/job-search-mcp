@@ -4,6 +4,7 @@ from tools.health import get_daily_checkin_nudge
 
 
 def get_job_hunt_status() -> str:
+    """Return the current job application pipeline: all tracked companies, roles, statuses, next steps, and contacts. Also nudges a daily mental health check-in if none has been logged today."""
     data = _load_json(config.STATUS_FILE, {"applications": []})
     apps = data.get("applications", [])
     nudge = get_daily_checkin_nudge()
@@ -43,6 +44,7 @@ def update_application(
     contact: str = "",
     notes: str = "",
 ) -> str:
+    """Add or update a job application in the pipeline tracker. Pass company, role, and current status (e.g. 'applied', 'phone screen', 'offer'). Optionally include next_steps, contact name, and free-form notes."""
     data = _load_json(config.STATUS_FILE, {"applications": []})
     apps: list = data.setdefault("applications", [])
 

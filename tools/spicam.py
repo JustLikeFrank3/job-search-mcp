@@ -5,6 +5,7 @@ from lib import config
 
 
 def scan_spicam_for_skills() -> str:
+    """Scan the RetrosPiCam project directory and detect technologies used (FastAPI, React Native, Azure Blob Storage, Raspberry Pi, etc.). Reports newly detected skills not yet on the master resume so they can be added."""
     if not config.SPICAM_FOLDER.exists():
         return f"RetrosPiCam folder not found at: {config.SPICAM_FOLDER}"
 

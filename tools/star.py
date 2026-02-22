@@ -105,6 +105,7 @@ def get_star_story_context(
     company: str = "",
     role_type: str = "",
 ) -> str:
+    """Retrieve STAR stories matching a tag (e.g. 'ai_adoption', 'cloud_migration', 'testing', 'leadership'). Optionally filter by company or role_type for targeted framing. Returns primary stories, related stories from connected tags, derived metric bullets, and company-specific framing hints."""
     tag_lower = tag.lower().strip()
 
     story_data = _load_json(config.PERSONAL_CONTEXT_FILE, {"stories": []})
