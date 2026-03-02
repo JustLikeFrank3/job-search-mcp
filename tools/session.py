@@ -2,17 +2,18 @@
 Session startup tool — v1
 
 get_session_context()
-    Returns master resume + tone profile + personal context + job hunt status
-    + people/networking log in a single call. MUST be the first tool called
-    in every session. No exceptions. This is the entire point of the system.
+    Returns master resume + tone profile (all samples) + STAR context (stories,
+    metrics, company framing) + job hunt status + people/networking log in a
+    single call. MUST be the first tool called in every session.
+    No exceptions. This is the entire point of the system.
 """
 
 from lib import config
 from lib.io import _load_master_context
 from tools.tone import get_tone_profile
-from tools.context import get_personal_context
 from tools.job_hunt import get_job_hunt_status
 from tools.people import get_people
+from tools.star import get_all_star_context
 
 
 def get_session_context() -> str:
@@ -21,8 +22,8 @@ def get_session_context() -> str:
 
     Returns Frank's complete context in one shot:
       1. Master resume with all metrics, projects, and personal notes
-      2. Tone profile — Frank's voice. Do not write a single word for him without this.
-      3. Personal stories and context — family, identity, motivation
+      2. Tone profile — all writing samples. Do not write a single word for him without this.
+      3. STAR context — all personal stories, anecdotes, metric bullets by category, and company framing hints
       4. Live job hunt pipeline — current applications and next steps
       5. People & networking log — every contact, referral, and relationship
 
@@ -38,13 +39,13 @@ def get_session_context() -> str:
         "",
         _load_master_context(),
         "",
-        "── 2. TONE PROFILE ───────────────────────────────────────",
+        "── 2. TONE PROFILE (all samples) ─────────────────────────",
         "",
         get_tone_profile(),
         "",
-        "── 3. PERSONAL CONTEXT ───────────────────────────────────",
+        "── 3. STAR CONTEXT (stories + metrics + framing) ─────────",
         "",
-        get_personal_context(),
+        get_all_star_context(),
         "",
         "── 4. JOB HUNT STATUS ────────────────────────────────────",
         "",

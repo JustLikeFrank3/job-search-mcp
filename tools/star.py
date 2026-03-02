@@ -198,5 +198,47 @@ def get_star_story_context(
     return "\n".join(lines)
 
 
+def get_all_star_context() -> str:
+    """Dump the full STAR context: all personal stories, all metric bullets by category, and all company framing hints. Used at session boot to load the complete interview prep picture."""
+    story_data = _load_json(config.PERSONAL_CONTEXT_FILE, {"stories": []})
+    all_stories = story_data.get("stories", [])
+
+    lines = ["═══ STAR CONTEXT (full boot dump) ═══", ""]
+
+    # All personal stories
+    if all_stories:
+        lines.append(f"── PERSONAL STORIES ({len(all_stories)} total) ──")
+        for s in all_stories:
+            lines += [
+                f"\n▪ #{s['id']} — {s['title']}",
+                f"  Tags:   {', '.join(s.get('tags', []))}",
+                f"  People: {', '.join(s.get('people', []))}",
+                f"  {s['story']}",
+                "",
+            ]
+    else:
+        lines.append("No personal stories logged yet.")
+        lines.append("")
+
+    # All STAR metrics by category
+    lines.append("── RESUME METRICS BY CATEGORY ──")
+    for category, bullets in _STAR_METRICS.items():
+        lines.append(f"\n  [{category}]")
+        for b in bullets:
+            lines.append(f"    • {b}")
+    lines.append("")
+
+    # All company framing hints
+    lines.append("── COMPANY FRAMING HINTS ──")
+    for company, framing in _COMPANY_FRAMING.items():
+        lines.append(f"\n  [{company.upper()}]")
+        for k, v in framing.items():
+            lines.append(f"    {k}: {v}")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
 def register(mcp) -> None:
     mcp.tool()(get_star_story_context)
+    mcp.tool()(get_all_star_context)
